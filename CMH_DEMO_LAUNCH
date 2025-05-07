@@ -1,0 +1,42 @@
+ON JETSON:
+
+roslaunch wam_node wam_node.launch
+
+roslaunch waterloo_steel_supervisor multi_intel_camera_d455.launch enable_base:=true enable_color:=true enable_EE:=true enable_accel:=false enable_gyro:=false
+
+
+ON YOUR COMPUTER:
+
+roslaunch barrett_moveit_fresh move_group.launch
+
+roslaunch aruco_ros aruco_realsense.launch camera_sim:=true camera_image_remap:=/cam_base/color/image_raw camera_info_remap:=/cam_base/color/camera_info 
+
+rosrun barrett_moveit_fresh CMH_Demo.py
+
+
+
+AUTONOMOUS MOVING INFO
+
+
+PICK AND PLACE POSITION:
+
+rostopic echo /uwarl/amcl_pose
+
+header: 
+  seq: 270
+  stamp: 
+    secs: 1737572794
+    nsecs: 297514000
+  frame_id: "uwarl_map"
+pose: 
+  pose: 
+    position: 
+      x: 1.1165759913412285
+      y: -1.127147747086804
+      z: 0.0
+    orientation: 
+      x: 0.0
+      y: 0.0
+      z: 0.717253833797434
+      w: 0.6968119817446331
+
