@@ -74,7 +74,7 @@ class SAMSegmentationNode:
 
     def run_sam_on_image(self, image, depth, display=True):
         try:
-            results = self.model(image)
+            results = self.model(image, verbose=False)
             masks = results[0].masks.data.cpu().numpy()
         except Exception as e:
             rospy.logwarn(f"Segmentation failed or no masks: {e}")
@@ -102,15 +102,27 @@ class SAMSegmentationNode:
             else:
                 resized_depth = depth
 
-            # Compute average depth
-            depth_values = resized_depth[mask_indices]
-            valid_depths = depth_values[np.isfinite(depth_values) & (depth_values > 0)]
-            avg_depth = np.mean(valid_depths) if valid_depths.size > 0 else float('nan')
+            # Compute average depth in small center region
+            yx = np.argwhere(mask_indices)
+            if yx.size == 0:
+                avg_depth = float('nan')
+                center = [0, 0]
+            else:
+                center = np.mean(yx, axis=0).astype(int)  # (y, x)
+                y, x = center
+                window_size = 5  # must be odd
+                half = window_size // 2
+                y_min = max(y - half, 0)
+                y_max = min(y + half + 1, resized_depth.shape[0])
+                x_min = max(x - half, 0)
+                x_max = min(x + half + 1, resized_depth.shape[1])
+
+                region = resized_depth[y_min:y_max, x_min:x_max].flatten()
+                valid_depths = region[np.isfinite(region) & (region > 0)]
+                avg_depth = np.mean(valid_depths) if valid_depths.size > 0 else float('nan')
 
             avg_depths.append(avg_depth)
-            yx = np.argwhere(mask_indices)
-            center = np.mean(yx, axis=0).astype(int) if yx.size > 0 else [0, 0]
-            text_locations.append((center[1], center[0]))  # x, y
+            text_locations.append((x, y))  # x, y
 
             #rospy.loginfo(f"Mask {idx}: Avg depth = {avg_depth:.2f} m")
 
@@ -121,7 +133,7 @@ class SAMSegmentationNode:
             for (x, y), depth_val in zip(text_locations, avg_depths):
                 if not np.isnan(depth_val):
                     plt.text(x, y, f"{depth_val:.2f} m", color='white',
-                             fontsize=10, bbox=dict(facecolor='black', alpha=0.5))
+                            fontsize=10, bbox=dict(facecolor='black', alpha=0.5))
             plt.axis("off")
             plt.title("Segmentation with Depth Overlay")
             plt.show(block=False)
@@ -129,6 +141,7 @@ class SAMSegmentationNode:
             plt.close()
         else:
             rospy.loginfo(f"Segmented {len(masks)} objects (no display).")
+
 
 if __name__ == "__main__":
     try:
