@@ -22,7 +22,15 @@ model_cfg = "configs/sam2.1/sam2.1_hiera_s.yaml"
 predictor = build_sam2_camera_predictor(model_cfg, sam2_checkpoint)
 
 # YOLO class names
-classNames = [...]  # (unchanged - full list omitted here)
+classNames = ["person", "bicycle", "car", "motorbike", "aeroplane", "bus", "train", "truck", "boat", "traffic light",
+              "fire hydrant", "stop sign", "parking meter", "bench", "bird", "cat", "dog", "horse", "sheep", "cow",
+              "elephant", "bear", "zebra", "giraffe", "backpack", "umbrella", "handbag", "tie", "suitcase", "frisbee",
+              "skis", "snowboard", "sports ball", "kite", "baseball bat", "baseball glove", "skateboard", "surfboard",
+              "tennis racket", "bottle", "wine glass", "cup", "fork", "knife", "spoon", "bowl", "banana", "apple",
+              "sandwich", "orange", "broccoli", "carrot", "hot dog", "pizza", "donut", "cake", "chair", "sofa",
+              "pottedplant", "bed", "diningtable", "toilet", "tvmonitor", "laptop", "mouse", "remote", "keyboard",
+              "cell phone", "microwave", "oven", "toaster", "sink", "refrigerator", "book", "clock", "vase",
+              "scissors", "teddy bear", "hair drier", "toothbrush"] # (unchanged - full list omitted here)
 
 # Initialization
 bridge = CvBridge()
@@ -59,7 +67,7 @@ def image_callback(msg):
                 cls = int(box.cls[0])
                 if cls < 0 or cls >= len(classNames):
                     continue
-                if classNames[cls] not in ["bottle", "cup"]:
+                if classNames[cls] not in ["bottle", "cup","frisbee"]:
                     continue
 
                 x1, y1, x2, y2 = map(int, box.xyxy[0])
@@ -108,7 +116,10 @@ def image_callback(msg):
             prev_center = (cx, cy)
             prev_time = curr_time
 
-            overlay = cv2.cvtColor(all_mask, cv2.COLOR_GRAY2BGR)
+            color_mask = np.zeros_like(frame, dtype=np.uint8)
+            color_mask[all_mask > 0] = (0, 0, 255)  # BGR: RED
+
+            overlay = color_mask
             overlay_frame = cv2.addWeighted(original_frame, 1.0, overlay, 0.5, 0)
             cv2.circle(overlay_frame, (cx, cy), 5, (0, 255, 0), -1)
 
